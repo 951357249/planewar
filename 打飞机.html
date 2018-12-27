@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="dahuiji.css" />
+	<script>
+		window.onload = function(){
+			new engine();
+		}
+	function engine(){
+		this.ele = byid('body_main');
+		this.init();
+	}
+	//引擎初始化
+	engine.prototype.init = function(){
+		var that = this;
+		var uls = byid('options');
+		var lis = uls.children;
+		//console.log(lis);
+		
+		for(var i =  0 , len = lis.length ; i< len ; i++ ){
+			var index ;
+			lis[i].index = i ;
+			//console.log(index);
+			lis[i].onclick = function(){
+				
+				this.parentNode.remove();
+				that.loading();
+				that.frequency = this.index ;
+			//	console.log(that.frequency);
+			}
+		}
+		
+	}
+	//加载
+	engine.prototype.loading  =function(){
+		var that = this ;
+		
+		var logo = createEle('div','logo');
+		appendBody(logo);
+		var load = createEle('div','loading');
+		appendBody(load);
+		var index = 1 ;
+		var i = 0;
+		 var loadtimer=  setInterval(function(){
+			 load.style.background = 'url(images/loading'+(index++ % 3 + 1) +'.png) no-repeat';
+			 
+			 },1000)
+			 var movetime = setInterval(function(){
+				that.ele.style.backgroundPositionY = (i-- -10) + 'px';				
+				
+			 },10)
+		setTimeout(function(){
+			logo.parentNode.removeChild(logo);
+			load.parentNode.removeChild(load);
+			clearInterval(loadtimer);
+			that.start();
+			},3000)
+			
+	}
+	//
+	engine.prototype.start = function(){
+		Plane.init();
+		Plane.fire(this.frequency);
+		this.createenemy();
+	}
+	engine.prototype.createenemy = function(){
+			setInterval(function(){
+				Math.random() > 0.5 ? new enemy(1) : '' ;
+			},300)
+			setInterval(function(){
+				Math.random() > 0.5 ? new enemy(2) : '' ;
+			},500)
+			setInterval(function(){
+				Math.random() > 0.2 ? new enemy(3) : '' ; 
+			},10000)
+		
+		
+	}
+	
+	//我方飞机
+	
+	var Plane = {	
+		
+		ele : createEle('div','my-warplain'),
+		hp: 100,
+		init : function(){
+			appendBody(this.ele);
+			
+			this.ele.style.left = document.documentElement.clientWidth /2 - this.ele.offsetWidth / 2 + 'px';
+			this.ele.style.top = document.documentElement.clientHeight  - this.ele.offsetHeight  + 'px';
+			this.fly();
+		},
+		
+		fly : function(evt){
+			var that = this ;	
+			var bodymain =  byid('body_main');
+			document.onmousemove = function (evt){
+			var e = evt || window.event ;
+		//	console.log(Plane.ele.offsetLeft);
+			var left = e.pageX  - that.ele.offsetWidth /2 ; 
+			if(left<= bodymain.offsetLeft){
+				left = bodymain.offsetLeft ;
+			}else if(left > bodymain.offsetWidth + bodymain.offsetLeft  - that.ele.offsetWidth ){
+				left = bodymain.offsetWidth + bodymain.offsetLeft  - that.ele.offsetWidth  ;
+			}
+			that.ele.style.left  = left + 'px';
+			that.ele.style.top = e.pageY - that.ele.offsetHeight /2  + 'px' ;
+			}
+			
+		},
+		fire : function(frequency){
+			
+			var that = this ;
+			var defaultFrequency = 200 ;
+			
+			switch(frequency){
+				case 0 : defaultFrequency = 300 ; break ;
+				case 1 : defaultFrequency = 200 ; break ;
+				case 2 : defaultFrequency = 100 ; break ;
+				case 3 : defaultFrequency = 50 ; break ;
+			}
+			var id = 1 ;
+			setInterval(function(){
+				that.bullet.push(new bullet(id));
+				id++;
+			//	console.log(that.bullet);
+				
+			},defaultFrequency);
+		
+		},
+		bullet : []
+		
+	}
+	
+	
+	//子弹
+	function bullet(id){
+		this.id = id ;
+		this.ele = createEle('div','bullet');
+		this.init();
+	}	
+	bullet.prototype.init = function(){
+		
+		this.ele.id = this.id ;
+		appendBody(this.ele);
+		 this.ele.style.left = Plane.ele.offsetLeft +Plane.ele.offsetWidth / 2 + this.ele.offsetWidth / 2 + 'px';
+		this.ele.style.top  = Plane.ele.offsetTop - this.ele.offsetHeight + 'px';
+		this.fly();
+		
+	}
+	bullet.prototype.fly = function (){
+		var that = this ;
+		this.flytime = setInterval(function(){
+			that.ele.style.top = that.ele.offsetTop - 20 + 'px';
+			if(that.ele.offsetTop <= 10 ){
+				 that.boom();
+			}
+		},20)
+		
+	}
+	bullet.prototype.boom = function(){
+		var that = this ;
+		this.ele.className = 'bullet_die' ;
+		clearInterval(this.flytime);
+		setTimeout(function(){
+			that.ele.remove();
+			for(var i = 0 , len = Plane.bullet.length ; i< len ; i++ ){
+				if(that.ele.id == Plane.bullet[i].id){
+					Plane.bullet.splice(i,1);
+				}
+			}
+		},300)
+		
+	}
+	
+	function enemy(type){
+		this.type = type ;
+		this.init();
+	}
+	enemy.prototype.init = function(){
+		switch(this.type){
+			case 1 : this.ele=  createEle('div','enemy-small'); this.speed = 3; this.hp= 50 ; break ;
+			case 2 :this.ele=  createEle('div','enemy-middle') ; this.speed = 6 ;
+this.hp = 80 ; break ;
+			case 3 :this.ele =  createEle('div','enemy-large') ; this.speed = 2 ; this.hp=200; break ;
+		}
+		appendBody(this.ele);
+		this.position();
+	}
+	enemy.prototype.position = function(){
+		var bodymain = byid('body_main');
+		this.ele.style.left = random(bodymain.offsetLeft,bodymain.offsetLeft + bodymain.offsetWidth  - this.ele.offsetWidth) + 'px' ;
+		
+		this.ele.style.top = -this.ele.offsetHeight + 'px';
+		
+		this.fly();
+	}
+	enemy.prototype.fly = function(){
+		var that = this ;
+		this.timer = setInterval(function(){
+			that.ele.style.top = that.ele.offsetTop + that.speed + 'px';
+			that.pz();
+			if(that.ele.offsetTop >= document.documentElement.clientHeight){
+				clearInterval(that.tiemr);
+				that.ele.remove();
+			}
+		},50)
+		
+	}
+	enemy.prototype.pz = function(){
+		var scrore  = 0;
+		for(var i = 0 ; i< Plane.bullet.length; i++ ){
+			if(!(this.ele.offsetLeft + this.ele.offsetWidth < Plane.bullet[i].ele.offsetLeft || Plane.bullet[i].ele.offsetLeft + Plane.bullet[i].ele.offsetWidth< this.ele.offsetLeft)){
+				if(!(this.ele.offsetTop + this.ele.offsetHeight < Plane.bullet[i].ele.offsetTop || Plane.bullet[i].ele.offsetTop + Plane.bullet[i].ele.offsetHeight< this.ele.offsetTop)){
+					this.hp--;
+					if(this.hp==0){
+						scrore++;
+							this.ele.parentNode.removeChild(this.ele);
+							
+							clearInterval(this.timer);
+							
+					}
+					Plane.bullet[i].boom();
+					
+
+				
+			
+// 			 }else {
+// 				
+// 					Plane.hp--;
+// 					console.log(Plane.hp);
+// 					if(Plane.hp==0){
+// 						alert('游戏结束');
+// 					
+					// (this.ele.offsetLeft  == Plane.ele.offsetLeft || Plane.ele.offsetLeft == this.ele.offsetLeft) && (this.ele.offsetTop + this.ele.offsetHeight == Plane.ele.offsetTop || Plane.ele.offsetTop + Plane.ele.offsetHeight== this.ele.offsetTop)(this.ele.offsetLeft  == Plane.ele.offsetLeft && this.ele.offsetTop + this.ele.offsetHeight == Plane.ele.offsetTop )
+				}
+			}
+			console.log(scrore);
+		}
+		
+		
+		
+	}
+	
+	function createEle(tag,classname){
+		var ele = document.createElement(tag);
+		ele.className = classname ;
+		return ele ;
+	}
+	function byid(id){
+		return document.getElementById(id);
+	}
+	function appendBody(ele){
+		document.body.appendChild(ele);
+	}
+	function random(min,max){
+		return Math.floor(Math.random()*(max- min+ 1)+ min) ;
+	}
+	</script>
+
+</head>
+<body>
+	<div id="body_main" class="main">
+			<ul id="options" class="options">
+				<li value="1">超级困难</li>
+				<li value="2">非常困难</li>
+				<li value="3">比较困难</li>
+				<li value="4">就选我吧</li>
+			</ul>
+	</div>
+</body>
+</html>
